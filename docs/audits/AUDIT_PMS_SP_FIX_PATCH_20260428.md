@@ -51,11 +51,27 @@
 | P1-G     | LX 海外仓              | -           | §1 视图含 wid 9488/9487 |
 | P2-H     | FBA × ratio            | 小          | §5 取消二次乘       |
 
-## 5. 项目侧建议
+## 5. AMF↔wms 仓库映射真相（v2.1 新增）
+
+不需要新建 `amf_warehouse_map`，链路已通：
+
+```
+AMF.warehouse_name (订单/库存)
+   → JOIN amf_warehouse_region.warehouse_code      (29 行字典)
+   → region 字符串 (美东/美南/美西/美中/欧洲/CG/FBA…)
+   → JOIN wms_warehouse.name                        (27/29 直命中)
+   → wms_warehouse.id
+   → JOIN wms_warehouse_group_relation.warehouse_id
+   → wms_warehouse_group(group_wms_type=2).logic_shop_id  ✓ 11 桶之一
+```
+
+未命中的 2 条（FBM、CG-Litian 命名差）由 `region_to_bucket` 字典 CTE 兜底。
+
+## 6. 项目侧建议
 
 1. 先补 `cos_shop_group_relation` 美东/美南/美中/美北/CG/OWS 6 桶的店铺成员
-2. 维护 `amf_warehouse_map`（或类似映射表）：AMF 仓库代码 → wms_warehouse.id
-3. 跑修复版 SP 后用 `v_amf_jh_lx_order` 校验偏差应 <1%
+2. 跑修复版 SP 后用 `v_amf_jh_lx_order` 校验偏差应 <1%
+3. 长期：把 `amf_warehouse_region` 与 `wms_warehouse.name` 做强一致性约束（命名规范化 FBM/CG-Litian）
 
 ## 6. 文件清单
 
